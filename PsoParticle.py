@@ -16,6 +16,9 @@ class PsoParticle():
         self.LocalBestPosition = localBestPosition
         self.LocalBestValue = localBestValue
 
+    def SendFitFunJobRequest(self):
+        pass
+
     @classmethod
     def GenerateInitial(cls, noVariable: int, minVal: Vector, maxVal: Vector) -> 'PsoParticle':
         x = []
@@ -24,11 +27,11 @@ class PsoParticle():
         if len(minVal) == 1:
             for k in range(noVariable):
                 x.append(random.uniform(minVal[0], maxVal[0]))
-                v.append(random.uniform(minVal[0], maxVal[0]))
+                v.append(random.uniform(minVal[0], maxVal[0])*0.1)
 
         else:
             for k in range(noVariable):
                 x.append(random.uniform(minVal[k], maxVal[k]))
-                v.append(random.uniform(minVal[0], maxVal[0]))
+                v.append(random.uniform(minVal[k], maxVal[k])*0.1)
 
         return PsoParticle(x, v, x, -sys.float_info.max)

@@ -33,6 +33,14 @@ class PsoConfig:
         self.WeightSelf = weightSelf
         self.WeightSocial = weightSocial
         self.LearningRate = learningRate
-        self.ParticleLowerBound = particleLowerBound
-        self.ParticleUpperBound = particleUpperBound
+
+        if particleLowerBound is not None:
+            self.ParticleLowerBound = particleLowerBound
+        else:
+            self.ParticleLowerBound = [0]
+
+        if particleUpperBound is not None:
+            self.ParticleUpperBound = particleUpperBound
+        else:
+            self.ParticleUpperBound = [1]
 
