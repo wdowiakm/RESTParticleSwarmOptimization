@@ -12,6 +12,7 @@ class PsoConfig:
                  maxStallIterations: int = 20,
                  weightSelf: float = 1.49,
                  weightSocial: float = 1.49,
+                 weightInertia: float = 0.99,
                  learningRate: float = 0.1,
                  particleLowerBound: Vector = None,
                  particleUpperBound: Vector = None):
@@ -32,6 +33,7 @@ class PsoConfig:
         self.MaxStallIterations = maxStallIterations
         self.WeightSelf = weightSelf
         self.WeightSocial = weightSocial
+        self.WeightInertia = weightInertia
         self.LearningRate = learningRate
 
         if particleLowerBound is not None:

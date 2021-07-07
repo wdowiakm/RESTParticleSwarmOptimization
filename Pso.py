@@ -46,43 +46,53 @@ class Pso:
         log.info("Start PSO loop")
         for k in range(self.Config.MaxIteration):
             log.info(f"Iteration {k + 1}/{self.Config.MaxIteration}")
-            log.info(f"Sending fitness function jos requests")
+            log.info("Sending fitness function jos requests")
             for p in self.Population:
                 p.SendFitFunJobRequest()
 
-            log.info(f"Waiting for fitness function evaluation")
+            log.info("Waiting for fitness function evaluation")
             while not all(self._iterationResults):
                 # await asyncio.sleep(1000)
                 sleep(1)
                 log.debug(f"{len([x for x in self._iterationResults if x is not None])}/{self.Config.NoParticle} - "
                           f"fitness function calculated")
+
+            log.info("Updating global solution")
+            iterMaxVal = max(self._iterationResults)
+            if iterMaxVal > self.State.GlobalBestValue:
+                iterMaxIdx = self._iterationResults.index(iterMaxVal)
+                deltaGlobalBest = abs(self.State.GlobalBestValue - iterMaxVal)
+                self.State.GlobalBestValue = iterMaxVal
+                self.State.GlobalBestPosition = self.Population[iterMaxIdx].CurrentPosition
+                if deltaGlobalBest > self.Config.FitFunTolerance:
+                    self.State.NoStallIteration = 0
+                else:
+                    self.State.NoStallIteration += 1
+            else:
+                self.State.NoStallIteration += 1
+
+            log.info("Updating particle solution, position, velocity")
+            n = 0
+            for p in self.Population:
+                # Updating particle best solution
+                if self._iterationResults[n] is not None and self._iterationResults[n] > p.LocalBestValue:
+                    p.LocalBestValue = self._iterationResults[n]
+                    p.LocalBestPosition = p.CurrentPosition
+
+                # Updating particle velocity
+                p.UpdateVelocity(self.Config.WeightInertia,
+                                 self.Config.WeightSelf,
+                                 self.Config.WeightSocial,
+                                 self.State.GlobalBestPosition)
+                # Updating particle position
+                p.UpdatePosition(self.Config.ParticleLowerBound,
+                                 self.Config.ParticleUpperBound,
+                                 self.Config.LearningRate)
+                n += 1
+
+            if self.State.NoStallIteration > self.Config.MaxStallIterations or \
+                    self.State.GlobalBestValue > self.Config.TargetedValue:
+                break
+
             self._iterationResults = [None] * self.Config.NoParticle
             self.State.CurrentIteration += 1
-            self.State.GlobalBestValue = "awesome"
-            log.debug("loop done")
-
-    def _generateRandomVector(self, length, minVal, maxVal):
-        r = []
-        for k in range(length):
-            r.append(random.uniform(minVal, maxVal))
-        return r
-
-
-
-
-
-    # def NextIter(self):
-    #     if self.State.NoStallIteration > self.Config.MaxStallIterations or \
-    #             self.State.GlobalBestValue > self.Config.TargetedValue:
-    #         pass
-    #     else:
-    #         print(f"Calculate iteration n = {self.State.CurrentIteration} / {self.Config.MaxIteration}")
-    #         self.State.CurrentIteration += 1
-    #         self.NextIter()
-
-
-if __name__ == "__main__":
-    # PSO Initialization
-    psoConfig = PsoConfig(15)
-    pso = Pso(psoConfig)
-    pso.Start()

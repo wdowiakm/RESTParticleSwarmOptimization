@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <title>math.js | plot</title>
+  <script src="https://unpkg.com/mathjs@9.4.4/lib/browser/math.js"></script>
+
+  <script src="https://cdn.plot.ly/plotly-1.35.2.min.js"></script>
+
+  <style>
+    input[type=text] {
+      width: 300px;
+    }
+    input {
+      padding: 6px;
+    }
+    body, html, input {
+      font-family: sans-serif;
+      font-size: 11pt;
+
+    }
+    form {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+
+<body>
+    <h1>Particle Swarm Optimisation</h1>
+    <h2>Optimisation results</h2>
+    <p>Convergence plot</p>
+    <div id="convergence_plot"></div>
+    <h2>Algorithm showcase</h2>
+    <p>Fitness function contour plot with particles</p>
+    <div id="contur_plot"></div>
+
+    <script>
+        const convX = [1, 2, 3, 4, 5, 6]
+        const convY = [0.3, 1.2, 2, 2.7, 2.9]
+        const psoHistData = {
+        x: convX,
+        y: convY,
+        type: 'scatter'
+        };
+
+        var psoHistPlot = [psoHistData];
+        Plotly.newPlot('convergence_plot', psoHistPlot);
+
+
+        let size = 101, x = new Array(size), y = new Array(size), z = new Array(size), i, j;
+
+        for(i = 0; i < size; i++) {
+            x[i] = i/100;
+            y[i] = i/100;
+            z[i] = new Array(size);
+        }
+
+        for(i = 0; i < size; i++) {
+            for(j = 0; j < size; j++) {
+                z[i][j] = Math.sin(x[i]*20)+Math.sin(y[j]*15)-2*Math.pow(x[i]-0.45,2)-2*Math.pow(y[j]-0.45,2)+1.0679;
+            }
+        }
+
+        const fitfun = {
+            z: z,
+            x: x,
+            y: y,
+            type: 'contour',
+            name: 'Fitness function'
+        };
+
+        const px = [0.25, 0.25, 0.25, 0.5, 0.5, 0.5, 0.75, 0.75, 0.75]
+        const py = [0.25, 0.5, 0.75, 0.25, 0.5, 0.75, 0.25, 0.5, 0.75]
+        const particles = {
+            x: px,
+            y: py,
+            mode: 'markers',
+            type: 'scatter',
+            name: "Particles",
+            marker: { size: 12, color: 'green' }
+        };
+
+        const data1 = [fitfun, particles];
+
+        var layout = {
+            width: 800,
+            height: 800,
+            xaxis: {},
+            yaxis: {
+                scaleanchor: "x",
+                scaleratio: 1
+            }
+        };
+
+        Plotly.newPlot('contur_plot', data1, layout);
+
+    </script>
+</body>
+
+</html>
