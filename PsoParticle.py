@@ -3,6 +3,7 @@ import sys
 import random
 import requests
 import json
+from time import sleep
 
 Vector = list[float]
 
@@ -13,18 +14,28 @@ class PsoParticle:
                  CurrentPosition: Vector = None,
                  CurrentVelocity: Vector = None,
                  LocalBestPosition: Vector = None,
-                 LocalBestValue: float = None):
+                 LocalBestValue: float = None,
+                 FitFunUrl: str = ""):
 
         self.ParticleId = ParticleId
         self.CurrentPosition = CurrentPosition
         self.CurrentVelocity = CurrentVelocity
         self.LocalBestPosition = LocalBestPosition
         self.LocalBestValue = LocalBestValue
+        self.FitFunUrl = FitFunUrl
 
     def SendFitFunJobRequest(self):
-        url = 'http://localhost:5000/FitFunRes'
-        logging.info(self.toJson())
-        result = requests.post(url, data=self.toJson(), headers={'content-type': 'application/json'})
+        noRetries = 0
+        waiting = True
+        while waiting:
+            try:
+                result = requests.post(self.FitFunUrl, data=self.toJson(), headers={'content-type': 'application/json'})
+                waiting = False
+            except:
+                if noRetries > 100:
+                    raise Exception(f"Cannot reach fitness function app {self.FitFunUrl}")
+                logging.error(f"Cannot reach fitness function app {self.FitFunUrl} - retry... ({noRetries})")
+                sleep(1)
 
     def UpdateVelocity(self, weightInertia, weightSelf, weightSocial, globalBestPosition):
         noVariables = len(self.CurrentPosition)
@@ -68,7 +79,7 @@ class PsoParticle:
         return json.dumps(self.__dict__, default=lambda o: o.__dict__)
 
     @classmethod
-    def GenerateInitial(cls, particleId, noVariable: int, minVal: Vector, maxVal: Vector) -> 'PsoParticle':
+    def GenerateInitial(cls, particleId, noVariable: int, minVal: Vector, maxVal: Vector, fitFunUrl: str) -> 'PsoParticle':
         x = []
         v = []
 
@@ -82,22 +93,4 @@ class PsoParticle:
                 x.append(random.uniform(minVal[k], maxVal[k]))
                 v.append(random.uniform(minVal[k], maxVal[k])*0.1)
 
-        return PsoParticle(particleId, x, v, x, -sys.float_info.max)
-
-
-population = []
-for n in range(2):
-    population.append(PsoParticle.GenerateInitial(
-        particleId=n,
-        noVariable=2,
-        minVal=[0],
-        maxVal=[10]))
-
-for p in population:
-    print(p.toJson())
-
-for p in population:
-    p.CurrentPosition = [1, 1]
-
-for p in population:
-    print(p.toJson())
+        return PsoParticle(particleId, x, v, x, -sys.float_info.max, fitFunUrl)

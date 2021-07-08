@@ -4,7 +4,8 @@ Vector = list[float]
 
 
 class PsoConfig:
-    def __init__(self, noVariables: int,
+    def __init__(self,
+                 noVariables: int,
                  noParticle: int = None,
                  maxIteration: int = None,
                  targetedValue: float = sys.float_info.max,
@@ -15,7 +16,8 @@ class PsoConfig:
                  weightInertia: float = 0.99,
                  learningRate: float = 0.1,
                  particleLowerBound: Vector = None,
-                 particleUpperBound: Vector = None):
+                 particleUpperBound: Vector = None,
+                 fitFunUrl: str = ""):
 
         if noParticle is not None:
             self.NoParticle = noParticle
@@ -46,3 +48,4 @@ class PsoConfig:
         else:
             self.ParticleUpperBound = [1]
 
+        self.FitFunUrl = fitFunUrl

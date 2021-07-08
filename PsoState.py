@@ -12,4 +12,7 @@ class PsoState:
         self.GlobalBestValue = globalBestValue
         self.CurrentIteration = currentIteration
         self.NoStallIteration = noStallIteration
-        self.HistGlobalBestValue = histGlobalBestValue
+        if histGlobalBestValue is not None:
+            self.HistGlobalBestValue = histGlobalBestValue
+        else:
+            self.HistGlobalBestValue = []

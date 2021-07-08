@@ -1,16 +1,29 @@
+import sys
+
 from flask import Flask, request, jsonify, render_template
+import os
 import logging
-import math
 
 from Pso import Pso
 from PsoConfig import PsoConfig
-from PsoParticle import PsoParticle
-from PsoState import PsoState
 
-# PSO Initialization
+SYS_APP_HOST = os.getenv('SYS_APP_HOST', 'localhost')
+SYS_APP_PORT = os.getenv('SYS_APP_PORT', 35100)
+FITFUN_URL = os.getenv('FITFUN_URL', 'http://localhost:35200/calcFitFun')
+NOVARIABLES = os.getenv('NOVARIABLES', 2)
+NOPARTICLE = os.getenv('NOPARTICLE', 25)
+MAXITERATION = os.getenv('MAXITERATION', 50)
+TARGETEDVALUE = os.getenv('TARGETEDVALUE', sys.float_info.max)
+FITFUNTOLERANCE = os.getenv('FITFUNTOLERANCE', 1e-6)
+MAXSTALLITERATIONS = os.getenv('MAXSTALLITERATIONS', 20)
+WEIGHTSELF = os.getenv('WEIGHTSELF', 1.49)
+WEIGHTSOCIAL = os.getenv('WEIGHTSOCIAL', 1.49)
+WEIGHTINERTIA = os.getenv('WEIGHTINERTIA', 0.99)
+LEARNINGRATE = os.getenv('LEARNINGRATE', 0.1)
+PARTICLELOWERBOUND = os.getenv('PARTICLELOWERBOUND', [0])
+PARTICLEUPPERBOUND = os.getenv('PARTICLEUPPERBOUND', [1])
 
 logging.basicConfig(level=logging.DEBUG)
-# app = Quart(__name__)
 app = Flask(__name__)
 
 
@@ -22,7 +35,7 @@ def state():
     noParticles = pso.Config.NoParticle
     gBestVal = pso.State.GlobalBestValue
     if pso.State.HistGlobalBestValue is not None:
-        convX = list(range(1, len(pso.State.HistGlobalBestValue)))
+        convX = list(range(0, len(pso.State.HistGlobalBestValue)))
         convY = pso.State.HistGlobalBestValue
     else:
         convX = 0
@@ -43,25 +56,34 @@ def state():
                            gBestVal=gBestVal, gBestX=gBestX, gBestY=gBestY)
 
 
-@app.route('/FitFunRes', methods=['POST'])
+@app.route('/fitFunRes', methods=['POST'])
 def fit_fun_res():
-    particle = PsoParticle(**request.json)
-    logging.info(f'Got fitness function result for particle: {particle}')
-    x = particle.CurrentPosition[0]
-    y = particle.CurrentPosition[1]
-    fitFunRes = math.sin(x*20)+math.sin(y*15)-2*math.pow(x-0.45, 2)-2*math.pow(y-0.45, 2)+1.0679
+    particleId = request.json["ParticleId"]
+    fitFunRes = request.json["Value"]
 
-    pso.SetFitFunRes(fitFunRes, particle.ParticleId)
+    pso.SetFitFunRes(fitFunRes, particleId)
 
     response = jsonify(success=True)
     return response
 
 
 if __name__ == '__main__':
-    psoConfig = PsoConfig(noVariables=2,
-                          noParticle=15,
-                          maxIteration=100)
+    # PSO Initialization
+    psoConfig = PsoConfig(noVariables=int(NOVARIABLES),
+                          noParticle=int(NOPARTICLE),
+                          maxIteration=int(MAXITERATION),
+                          targetedValue=float(TARGETEDVALUE),
+                          fitFunTolerance=float(FITFUNTOLERANCE),
+                          maxStallIterations=int(MAXSTALLITERATIONS),
+                          weightSelf=float(WEIGHTSELF),
+                          weightSocial=float(WEIGHTSOCIAL),
+                          weightInertia=float(WEIGHTINERTIA),
+                          learningRate=float(LEARNINGRATE),
+                          particleLowerBound=PARTICLELOWERBOUND,
+                          particleUpperBound=PARTICLEUPPERBOUND,
+                          fitFunUrl=FITFUN_URL)
     pso = Pso(psoConfig)
     pso.Start()
 
-    app.run()
+    # Start Flask app
+    app.run(host=SYS_APP_HOST, port=SYS_APP_PORT)

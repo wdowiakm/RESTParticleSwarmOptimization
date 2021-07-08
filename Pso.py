@@ -1,7 +1,5 @@
 import sys
-import random
 import logging
-# import asyncio
 import threading
 from time import sleep
 
@@ -34,11 +32,11 @@ class Pso:
                 particleId=n,
                 noVariable=self.Config.NoVariables,
                 minVal=self.Config.ParticleLowerBound,
-                maxVal=self.Config.ParticleUpperBound))
+                maxVal=self.Config.ParticleUpperBound,
+                fitFunUrl=self.Config.FitFunUrl))
         return population
 
     def Start(self):
-        # self._loopTask = asyncio.get_event_loop().create_task(self._psoLoop())
         self._loopTask = threading.Thread(target=self._psoLoop, name='pso loop')
         self._loopTask.daemon = True
         self._loopTask.start()
@@ -56,8 +54,7 @@ class Pso:
 
             log.info("Waiting for fitness function evaluation")
             while not all(self._iterationResults):
-                # await asyncio.sleep(1000)
-                sleep(1)
+                sleep(0.1)
                 log.debug(f"{len([x for x in self._iterationResults if x is not None])}/{self.Config.NoParticle} - "
                           f"fitness function calculated")
 
@@ -74,6 +71,8 @@ class Pso:
                     self.State.NoStallIteration += 1
             else:
                 self.State.NoStallIteration += 1
+
+            self.State.HistGlobalBestValue.append(self.State.GlobalBestValue)
 
             log.info("Updating particle solution, position, velocity")
             n = 0

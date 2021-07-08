@@ -1,0 +1,31 @@
+version: '3.7'
+
+services:
+  pso-main:
+    hostname: pso-main
+    image: pso_app:local
+    ports:
+      - 35100:35100
+    networks:
+      pso:
+    environment:
+      FITFUN_URL: http://pso-fitfun:35200/calcFitFun
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  pso-fitfun:
+    hostname: pso-fitfun
+    image: fitfun_app:local
+    ports:
+      - 35200:35200
+    networks:
+      pso:
+    environment:
+      PSO_MAIN_URL: http://pso-main:35100/fitFunRes
+    deploy:
+      mode: replicated
+      replicas: 15
+
+networks:
+  pso:
