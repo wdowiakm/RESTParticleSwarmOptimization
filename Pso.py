@@ -31,6 +31,7 @@ class Pso:
         population = []
         for n in range(self.Config.NoParticle):
             population.append(PsoParticle.GenerateInitial(
+                particleId=n,
                 noVariable=self.Config.NoVariables,
                 minVal=self.Config.ParticleLowerBound,
                 maxVal=self.Config.ParticleUpperBound))
@@ -41,6 +42,9 @@ class Pso:
         self._loopTask = threading.Thread(target=self._psoLoop, name='pso loop')
         self._loopTask.daemon = True
         self._loopTask.start()
+
+    def SetFitFunRes(self, val: float, n: int):
+        self._iterationResults[n] = val
 
     def _psoLoop(self):
         log.info("Start PSO loop")
