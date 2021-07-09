@@ -31,6 +31,9 @@ app = Flask(__name__)
 def state():
     currIter = pso.State.CurrentIteration
     maxIter = pso.Config.MaxIteration
+    isDone = str(pso.State.IsDone)
+    startingTime = str(pso.State.CalculationStartingTime)
+    calculationTime = str(pso.State.CalculationDuration if pso.State.CalculationDuration else "-")
     noParticlesDone = len([x for x in pso._iterationResults if x is not None])
     noParticles = pso.Config.NoParticle
     gBestVal = pso.State.GlobalBestValue
@@ -52,6 +55,7 @@ def state():
                            currIter=currIter, maxIter=maxIter,
                            noParticlesDone=noParticlesDone, noParticles=noParticles,
                            convX=convX, convY=convY,
+                           isDone=isDone, startingTime=startingTime, calculationTime=calculationTime,
                            particleX=particleX, particleY=particleY,
                            gBestVal=gBestVal, gBestX=gBestX, gBestY=gBestY)
 

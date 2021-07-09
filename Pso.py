@@ -2,6 +2,7 @@ import sys
 import logging
 import threading
 from time import sleep
+from datetime import datetime, timedelta
 
 
 from PsoConfig import PsoConfig
@@ -20,8 +21,8 @@ class Pso:
         self.Config = config
         self.Population = self._initPopulation()
         self.State = PsoState(
-            globalBestPosition=self.Population[0].LocalBestPosition,
-            globalBestValue=-sys.float_info.max)
+            GlobalBestPosition=self.Population[0].LocalBestPosition,
+            GlobalBestValue=-sys.float_info.max)
         self._loopTask = None
         self._iterationResults = [None] * config.NoParticle
 
@@ -37,6 +38,7 @@ class Pso:
         return population
 
     def Start(self):
+        self.State.CalculationStartingTime = datetime.now()
         self._loopTask = threading.Thread(target=self._psoLoop, name='pso loop')
         self._loopTask.daemon = True
         self._loopTask.start()
@@ -99,3 +101,6 @@ class Pso:
 
             self._iterationResults = [None] * self.Config.NoParticle
             self.State.CurrentIteration += 1
+        log.info("PSO loop finished")
+        self.State.CalculationDuration = datetime.now() - self.State.CalculationStartingTime
+        self.State.IsDone = True

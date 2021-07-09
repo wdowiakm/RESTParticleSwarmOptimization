@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>math.js | plot</title>
+  <title>PSO</title>
   <script src="https://unpkg.com/mathjs@9.4.4/lib/browser/math.js"></script>
 
   <script src="https://cdn.plot.ly/plotly-1.35.2.min.js"></script>
@@ -45,6 +45,18 @@
         <tr>
             <td>Global best Position</td>
             <td>[{{gBestX}}, {{gBestY}}]</td>
+        </tr>
+        <tr>
+            <td>Is done</td>
+            <td>{{ isDone }}</td>
+        </tr>
+        <tr>
+            <td>Started at</td>
+            <td>{{ startingTime }}</td>
+        </tr>
+        <tr>
+            <td>Calculation time</td>
+            <td>{{ calculationTime }}</td>
         </tr>
         </table>
     <p>Convergence plot</p>
