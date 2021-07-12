@@ -1,6 +1,7 @@
 import sys
 import json
 import logging
+import requests
 import threading
 from time import sleep
 from datetime import datetime, timedelta
@@ -48,6 +49,7 @@ class ParticleSwarmStateless:
             self.State = State
 
         self._iterationResults = [None] * self.Config.NoParticle
+        self._loopTask = None
 
     def _initPopulation(self) -> SwarmPopulation:
         population = []
@@ -60,14 +62,89 @@ class ParticleSwarmStateless:
                 fitFunUrl=self.Config.FitFunUrl))
         return population
 
-    def Start(self):
-        pass
+    def StartLoop(self):
+        if self.State.CurrentIteration == 1:
+            self.State.CalculationStartingTime = datetime.now()
+        self._loopTask = threading.Thread(target=self._psoLoop, name='pso loop')
+        self._loopTask.daemon = True
+        self._loopTask.start()
 
     def SetFitFunRes(self, val: float, n: int):
         pass
 
     def _psoLoop(self):
-        pass
+        self.State.CurrentIteration += 1
+        log.info(f"Start PSO iteration {self.State.CurrentIteration}/{self.Config.MaxIteration}")
+        log.info("Sending fitness function jos requests")
+        for p in self.Population:
+            p.SubmitFitnessFunctionJobRequest()
+
+        log.info("Waiting for fitness function evaluation")
+        while not all(self._iterationResults):
+            sleep(0.1)
+            log.debug(f"{self.NoFitnessFunctionJobDone}/{self.Config.NoParticle} - "
+                      f"fitness function calculated")
+
+        log.info("Updating global solution")
+        iterMaxVal = max(self._iterationResults)
+        if iterMaxVal > self.State.GlobalBestValue:
+            iterMaxIdx = self._iterationResults.index(iterMaxVal)
+            deltaGlobalBest = abs(self.State.GlobalBestValue - iterMaxVal)
+            self.State.GlobalBestValue = iterMaxVal
+            self.State.GlobalBestPosition = self.Population[iterMaxIdx].CurrentPosition
+            if deltaGlobalBest > self.Config.FitFunTolerance:
+                self.State.NoStallIteration = 0
+            else:
+                self.State.NoStallIteration += 1
+        else:
+            self.State.NoStallIteration += 1
+
+        self.State.HistGlobalBestValue.append(self.State.GlobalBestValue)
+
+        log.info("Updating particle solution, position, velocity")
+        n = 0
+        for p in self.Population:
+            # Updating particle best solution
+            if self._iterationResults[n] is not None and self._iterationResults[n] > p.LocalBestValue:
+                p.LocalBestValue = self._iterationResults[n]
+                p.LocalBestPosition = p.CurrentPosition
+
+            # Updating particle velocity
+            p.UpdateVelocity(self.Config.WeightInertia,
+                             self.Config.WeightSelf,
+                             self.Config.WeightSocial,
+                             self.State.GlobalBestPosition)
+            # Updating particle position
+            p.UpdatePosition(self.Config.ParticleLowerBound,
+                             self.Config.ParticleUpperBound,
+                             self.Config.LearningRate)
+            n += 1
+
+        self._iterationResults = [None] * self.Config.NoParticle
+
+        log.info("PSO loop finished")
+        if self.State.NoStallIteration > self.Config.MaxStallIterations or \
+                self.State.GlobalBestValue > self.Config.TargetedValue or \
+                self.State.CurrentIteration >= self.Config.MaxIteration:
+            self.State.IsDone = True
+            self.State.CalculationDuration = datetime.now() - self.State.CalculationStartingTime
+        else:
+            log.info(f"Sending information for next iteration to {self.Config.PsoMainUrl}")
+            self._sendRequestForNextIteration()
+
+    def _sendRequestForNextIteration(self):
+        noRetries = 0
+        waiting = True
+        while waiting:
+            try:
+                requests.post(self.Config.PsoMainUrl, data=self.toJson(), headers={'content-type': 'application/json'})
+                waiting = False
+            except:
+                if noRetries > 100:
+                    # If that happens whole algorithm will hangs (next PSO loop will not start)
+                    raise Exception(f"Cannot start next iteration via endpoint {self.Config.PsoMainUrl}")
+                logging.error(f"Cannot start next iteration via endpoint {self.Config.PsoMainUrl} - retry... ({noRetries})")
+                sleep(1)
 
     def toJson(self, indent: int = None):
         if indent is None:
@@ -76,6 +153,10 @@ class ParticleSwarmStateless:
 
     def __repr__(self):
         return self.toJson()
+
+    @property
+    def NoFitnessFunctionJobDone(self):
+        return len([x for x in self._iterationResults if x is not None])
 
 
 if __name__ == '__main__':

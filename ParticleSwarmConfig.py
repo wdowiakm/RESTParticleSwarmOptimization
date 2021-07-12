@@ -18,7 +18,8 @@ class ParticleSwarmConfig:
                  LearningRate: float = 0.1,
                  ParticleLowerBound: Vector = None,
                  ParticleUpperBound: Vector = None,
-                 FitFunUrl: str = ""):
+                 FitFunUrl: str = "",
+                 PsoMainUrl: str = ""):
 
         if NoParticle is not None:
             self.NoParticle = NoParticle
@@ -50,6 +51,7 @@ class ParticleSwarmConfig:
             self.ParticleUpperBound = [1]
 
         self.FitFunUrl = FitFunUrl
+        self.PsoMainUrl = PsoMainUrl
 
     def toJson(self, indent: int = None):
         if indent is None:

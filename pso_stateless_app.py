@@ -25,7 +25,7 @@ def state():
     isDone = str(pso.State.IsDone)
     startingTime = str(pso.State.CalculationStartingTime)
     calculationTime = str(pso.State.CalculationDuration if pso.State.CalculationDuration else "-")
-    noParticlesDone = len([x for x in pso._iterationResults if x is not None])
+    noParticlesDone = str(pso.NoFitnessFunctionJobDone)
     noParticles = pso.Config.NoParticle
     gBestVal = pso.State.GlobalBestValue
     if pso.State.HistGlobalBestValue is not None:
@@ -58,13 +58,19 @@ def config():
         psoConfig = ParticleSwarmConfig(**request.json)
         logging.info(f"Received PSO config: {psoConfig.toJson()}")
         if pso is None:
-            logging.debug("pso is none")
+            logging.info("Starting new PSO instance")
+            pso.StartLoop
+            return jsonify(success=True)
         else:
-            logging.debug("pso is not none")
-        return jsonify(success=True)
+            msg = "PSO instance already exists!"
+            logging.error(msg)
+            response = jsonify(success=False, message=msg)
+            response.status_code = 400
+            return response
     except:
-        logging.error("Unable to map request json to ParticleSwarmConfig")
-        response = jsonify(success=False)
+        msg = "Unable to map request json to ParticleSwarmConfig"
+        logging.error(msg)
+        response = jsonify(success=False, message=msg)
         response.status_code = 400
         return response
 
@@ -74,11 +80,21 @@ def psoIteration():
     global pso
     try:
         pso = ParticleSwarmStateless(**request.json)
-        logging.info(f"Received PSO iteration information: {pso.toJson()}")
-        return jsonify(success=True)
+        logging.info(f"Received PSO iteration information(state): {pso.toJson()}")
+        if pso is None or pso.NoFitnessFunctionJobDone == pso.Config.NoParticle:
+            logging.info("Continue PSO calculation based on previous state")
+            pso.StartLoop
+            return jsonify(success=True)
+        else:
+            msg = "PSO instance already exists!"
+            logging.error(msg)
+            response = jsonify(success=False, message=msg)
+            response.status_code = 400
+            return response
     except:
-        logging.error("Unable to map request json to ParticleSwarmStateless")
-        response = jsonify(success=False)
+        msg = "Unable to map request json to ParticleSwarmConfig"
+        logging.error(msg)
+        response = jsonify(success=False, message=msg)
         response.status_code = 400
         return response
 
