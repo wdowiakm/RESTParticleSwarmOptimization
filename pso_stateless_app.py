@@ -10,7 +10,7 @@ from ParticleSwarmConfig import ParticleSwarmConfig
 SYS_APP_HOST = os.getenv('SYS_APP_HOST', 'localhost')
 SYS_APP_PORT = os.getenv('SYS_APP_PORT', 35100)
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 
 
@@ -59,7 +59,8 @@ def config():
         logging.info(f"Received PSO config: {psoConfig.toJson()}")
         if pso is None:
             logging.info("Starting new PSO instance")
-            pso.StartLoop
+            pso = ParticleSwarmStateless(Config=psoConfig)
+            pso.StartLoop()
             return jsonify(success=True)
         else:
             msg = "PSO instance already exists!"
@@ -78,19 +79,20 @@ def config():
 @app.route('/psoIteration', methods=['POST'])
 def psoIteration():
     global pso
+    # if pso is not None:
+    #     oldJobs = pso._iterationResults.copy()
     try:
-        pso = ParticleSwarmStateless(**request.json)
+        newPso = ParticleSwarmStateless(**request.json)
+        pso.Config = newPso.Config
+        pso.State = newPso.State
+        pso.Population = newPso.Population
+        # for k in range(pso.Config.NoParticle):
+        #     if pso._iterationResults[k] is None and oldJobs[k] is not None:
+        #         pso._iterationResults[k] = oldJobs[k]
         logging.info(f"Received PSO iteration information(state): {pso.toJson()}")
-        if pso is None or pso.NoFitnessFunctionJobDone == pso.Config.NoParticle:
-            logging.info("Continue PSO calculation based on previous state")
-            pso.StartLoop
-            return jsonify(success=True)
-        else:
-            msg = "PSO instance already exists!"
-            logging.error(msg)
-            response = jsonify(success=False, message=msg)
-            response.status_code = 400
-            return response
+        logging.info(f"Continue PSO calculation based on previous state. Iteration: {pso.State.CurrentIteration}")
+        # pso.StartLoop()
+        return jsonify(success=True)
     except:
         msg = "Unable to map request json to ParticleSwarmConfig"
         logging.error(msg)
@@ -101,7 +103,16 @@ def psoIteration():
 
 @app.route('/fitnessFunctionResult', methods=['POST'])
 def fitnessFunctionResult():
-    return "ok"
+    particleId = request.json["ParticleId"]
+    fitFunRes = request.json["Value"]
+    logging.info(f"Got new fitness function result for particle: {particleId}")
+    pso.SetFitnessFunctionResult(fitFunRes, particleId)
+    logging.info(f"Fitness function jobs done: {pso.NoFitnessFunctionJobDone} / {pso.Config.NoParticle}")
+    if pso.NoFitnessFunctionJobDone == pso.Config.NoParticle:
+        pso.StartLoop()
+
+    response = jsonify(success=True)
+    return response
 
 
 if __name__ == '__main__':

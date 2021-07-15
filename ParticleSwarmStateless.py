@@ -63,27 +63,42 @@ class ParticleSwarmStateless:
         return population
 
     def StartLoop(self):
-        if self.State.CurrentIteration == 1:
+        if self.State.CurrentIteration == 0:
             self.State.CalculationStartingTime = datetime.now()
-        self._loopTask = threading.Thread(target=self._psoLoop, name='pso loop')
-        self._loopTask.daemon = True
-        self._loopTask.start()
+            self._loopTask = threading.Thread(target=self._psoInitialLoop, name='pso loop')
+            self._loopTask.daemon = True
+            self._loopTask.start()
+        else:
+            self._loopTask = threading.Thread(target=self._psoLoop, name='pso loop')
+            self._loopTask.daemon = True
+            self._loopTask.start()
 
-    def SetFitFunRes(self, val: float, n: int):
-        pass
+    def SetFitnessFunctionResult(self, val: float, n: int):
+        self._iterationResults[n] = val
 
-    def _psoLoop(self):
+    def _psoInitialLoop(self):
         self.State.CurrentIteration += 1
         log.info(f"Start PSO iteration {self.State.CurrentIteration}/{self.Config.MaxIteration}")
+
         log.info("Sending fitness function jos requests")
         for p in self.Population:
             p.SubmitFitnessFunctionJobRequest()
 
-        log.info("Waiting for fitness function evaluation")
-        while not all(self._iterationResults):
-            sleep(0.1)
-            log.debug(f"{self.NoFitnessFunctionJobDone}/{self.Config.NoParticle} - "
-                      f"fitness function calculated")
+        log.info(f"Sending information for next iteration to {self.Config.PsoMainUrl}")
+        self._sendRequestForNextIteration()
+
+    def _psoLoop(self):
+        self.State.CurrentIteration += 1
+        log.info(f"Start PSO iteration {self.State.CurrentIteration}/{self.Config.MaxIteration}")
+        # log.info("Sending fitness function jos requests")
+        # for p in self.Population:
+        #     p.SubmitFitnessFunctionJobRequest()
+        #
+        # log.info("Waiting for fitness function evaluation")
+        # while not all(self._iterationResults):
+        #     sleep(0.1)
+        #     log.debug(f"{self.NoFitnessFunctionJobDone}/{self.Config.NoParticle} - "
+        #               f"fitness function calculated")
 
         log.info("Updating global solution")
         iterMaxVal = max(self._iterationResults)
@@ -131,6 +146,10 @@ class ParticleSwarmStateless:
         else:
             log.info(f"Sending information for next iteration to {self.Config.PsoMainUrl}")
             self._sendRequestForNextIteration()
+            log.info("Sending fitness function jos requests")
+            for p in self.Population:
+                p.SubmitFitnessFunctionJobRequest()
+
 
     def _sendRequestForNextIteration(self):
         noRetries = 0
@@ -140,6 +159,7 @@ class ParticleSwarmStateless:
                 requests.post(self.Config.PsoMainUrl, data=self.toJson(), headers={'content-type': 'application/json'})
                 waiting = False
             except:
+                noRetries += 1
                 if noRetries > 100:
                     # If that happens whole algorithm will hangs (next PSO loop will not start)
                     raise Exception(f"Cannot start next iteration via endpoint {self.Config.PsoMainUrl}")
@@ -147,9 +167,12 @@ class ParticleSwarmStateless:
                 sleep(1)
 
     def toJson(self, indent: int = None):
+        conversionCopy = self.__dict__.copy()
+        conversionCopy.pop('_loopTask')
+        conversionCopy.pop('_iterationResults')
         if indent is None:
-            return json.dumps(self.__dict__, default=lambda o: o.__dict__)
-        return json.dumps(self.__dict__, default=lambda o: o.__dict__, indent=indent)
+            return json.dumps(conversionCopy, default=lambda o: o.__dict__ if not isinstance(o, datetime) else o.isoformat())
+        return json.dumps(conversionCopy, default=lambda o: o.__dict__, indent=indent)
 
     def __repr__(self):
         return self.toJson()
@@ -162,4 +185,5 @@ class ParticleSwarmStateless:
 if __name__ == '__main__':
     psoConfig = ParticleSwarmConfig(3)
     pso = ParticleSwarmStateless(psoConfig)
+    pso.State.CalculationStartingTime = datetime.now()
     print(pso.toJson(indent=3))
