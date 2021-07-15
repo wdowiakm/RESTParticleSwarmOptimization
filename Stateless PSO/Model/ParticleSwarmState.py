@@ -1,4 +1,5 @@
 import json
+from typing import Union
 from datetime import datetime, timedelta
 
 Vector = list[float]
@@ -12,8 +13,8 @@ class ParticleSwarmState:
                  NoStallIteration: int = 0,
                  HistGlobalBestValue: Vector = None,
                  IsDone: bool = False,
-                 CalculationStartingTime: str = None,
-                 CalculationDuration: str = None):
+                 CalculationStartingTime: Union[str, datetime] = None,
+                 CalculationDuration: Union[str, timedelta] = None):
 
         self.GlobalBestPosition = GlobalBestPosition
         self.GlobalBestValue = GlobalBestValue
@@ -26,13 +27,19 @@ class ParticleSwarmState:
             self.HistGlobalBestValue = HistGlobalBestValue
 
         if CalculationStartingTime is not None:
-            self.CalculationStartingTime = datetime.fromisoformat(CalculationStartingTime)
+            if isinstance(CalculationStartingTime, str):
+                self.CalculationStartingTime = datetime.fromisoformat(CalculationStartingTime)
+            elif isinstance(CalculationStartingTime, datetime):
+                self.CalculationStartingTime = CalculationStartingTime
         else:
             self.CalculationStartingTime = CalculationStartingTime
 
         if CalculationDuration is not None:
-            t = datetime.strptime(CalculationDuration, "%H:%M:%S")
-            self.CalculationDuration = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+            if isinstance(CalculationDuration, str):
+                t = datetime.strptime(CalculationDuration, "%H:%M:%S")
+                self.CalculationDuration = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+            elif isinstance(CalculationDuration, timedelta):
+                self.CalculationDuration = CalculationDuration
         else:
             self.CalculationDuration = CalculationDuration
 

@@ -3,12 +3,13 @@ import json
 import logging
 import requests
 import threading
+
 from time import sleep
 from datetime import datetime, timedelta
 
-from ParticleSwarmConfig import ParticleSwarmConfig
-from ParticleSwarmState import ParticleSwarmState
-from Particle import Particle
+from .ParticleSwarmConfig import ParticleSwarmConfig
+from .ParticleSwarmState import ParticleSwarmState
+from .Particle import Particle
 
 
 Vector = list[float]
@@ -48,8 +49,8 @@ class ParticleSwarmStateless:
         else:
             self.State = State
 
-        self._iterationResults = [None] * self.Config.NoParticle
-        self._loopTask = None
+        self._iterationResults: Vector = [None] * self.Config.NoParticle
+        self._loopTask: threading.Thread = None
 
     def _initPopulation(self) -> SwarmPopulation:
         population = []
@@ -149,7 +150,6 @@ class ParticleSwarmStateless:
             log.info("Sending fitness function jos requests")
             for p in self.Population:
                 p.SubmitFitnessFunctionJobRequest()
-
 
     def _sendRequestForNextIteration(self):
         noRetries = 0

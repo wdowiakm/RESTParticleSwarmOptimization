@@ -6,7 +6,7 @@ import json
 import os
 import math
 
-from Particle import Particle
+from Model.Particle import Particle
 
 SYS_APP_HOST = os.getenv('SYS_APP_HOST', 'localhost')
 SYS_APP_PORT = os.getenv('SYS_APP_PORT', 35200)
@@ -35,13 +35,19 @@ def calc_fit_fun():
 
     msg = json.dumps({"ParticleId": particle.ParticleId,
                       "Value": fitFunRes})
-
+    noRetries = 0
     waiting = True
     while waiting:
         try:
+            logging.info(f"Sending fitness function result to: {PSO_MAIN_URL}")
             result = requests.post(PSO_MAIN_URL, data=msg, headers={'content-type': 'application/json'})
             waiting = False
         except:
+            noRetries += 1
+            if noRetries > 100:
+                # If that happens whole algorithm will hangs (next PSO loop will not start)
+                raise Exception(f"Cannot send fitness function result to: {PSO_MAIN_URL}")
+            logging.error(f"Cannot send fitness function result to {PSO_MAIN_URL} - retry... ({noRetries})")
             sleep(1)
 
     if result.status_code == 200:
@@ -49,7 +55,7 @@ def calc_fit_fun():
         global n
         n += 1
     else:
-        response = jsonify(success=False)
+        response = jsonify(success=False, message=f"PSO Main status code = {result.status_code}")
         response.status_code = 500
 
     return response

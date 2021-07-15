@@ -1,11 +1,12 @@
 import os
-import sys
 import logging
 
 from flask import Flask, request, jsonify, render_template
 
-from ParticleSwarmStateless import ParticleSwarmStateless
-from ParticleSwarmConfig import ParticleSwarmConfig
+from Model.ParticleSwarmStateless import ParticleSwarmStateless
+from Model.ParticleSwarmConfig import ParticleSwarmConfig
+from Model.ParticleSwarmState import ParticleSwarmState
+from Model.Particle import Particle
 
 SYS_APP_HOST = os.getenv('SYS_APP_HOST', 'localhost')
 SYS_APP_PORT = os.getenv('SYS_APP_PORT', 35100)

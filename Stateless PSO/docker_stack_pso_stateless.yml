@@ -1,0 +1,29 @@
+version: '3.7'
+
+services:
+  pso-main:
+    hostname: pso-main
+    image: app_pso:local
+    ports:
+      - 35100:35100
+    networks:
+      pso:
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  pso-fitfun:
+    hostname: pso-fitfun
+    image: app_fitfun:local
+    ports:
+      - 35200:35200
+    networks:
+      pso:
+    environment:
+      PSO_MAIN_URL: http://pso-main:35100/fitnessFunctionResult
+    deploy:
+      mode: replicated
+      replicas: 15
+
+networks:
+  pso:
