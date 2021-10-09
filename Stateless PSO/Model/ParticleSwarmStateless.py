@@ -91,15 +91,6 @@ class ParticleSwarmStateless:
     def _psoLoop(self):
         self.State.CurrentIteration += 1
         log.info(f"Start PSO iteration {self.State.CurrentIteration}/{self.Config.MaxIteration}")
-        # log.info("Sending fitness function jos requests")
-        # for p in self.Population:
-        #     p.SubmitFitnessFunctionJobRequest()
-        #
-        # log.info("Waiting for fitness function evaluation")
-        # while not all(self._iterationResults):
-        #     sleep(0.1)
-        #     log.debug(f"{self.NoFitnessFunctionJobDone}/{self.Config.NoParticle} - "
-        #               f"fitness function calculated")
 
         log.info("Updating global solution")
         iterMaxVal = max(self._iterationResults)
